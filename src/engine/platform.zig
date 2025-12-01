@@ -1,5 +1,5 @@
 const std = @import("std");
-const backend = switch (@import("builtin").os.tag) {
+pub const backend = switch (@import("builtin").os.tag) {
     .windows => @import("backends/windows.zig"),
     .linux, .macos => @import("backends/unix.zig"),
     else => @panic("unsupported platform"),
@@ -23,12 +23,4 @@ pub fn revert() void {
     backend.exitAltScreen() catch {};
 
     std.debug.print("Platform revert complete.\n", .{});
-}
-
-pub fn getTerminalSize() !backend.TerminalSize {
-    return backend.getTerminalSize();
-}
-
-pub fn shouldQuit() bool {
-    return backend.shouldQuit();
 }
