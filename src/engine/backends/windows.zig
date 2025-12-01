@@ -17,6 +17,8 @@ var original_out_mode: u32 = 0;
 var original_in_mode: u32 = 0;
 var original_out_cp: c_uint = 0;
 
+const ENABLE_VIRTUAL_TERMINAL_PROCESSING: u32 = 0x0004;
+
 var should_quit = false;
 
 export fn win_ctrl_handler(_: u32) callconv(.winapi) c_int {
@@ -56,18 +58,6 @@ pub fn enterAltScreen() !void {
     return;
 }
 
-pub fn exitAltScreen() !void {
-    try ensureHandles();
-
-    std.debug.print("Exiting alternate screen buffer...\n", .{});
-
-    // Restore cursor and leave alternate buffer
-    const seq = AnsiCodes.Cursor.show ++ AnsiCodes.Text.Style.reset ++ AnsiCodes.Screen.exitAlt;
-    try flush(seq);
-
-    return;
-}
-
 pub fn enableRawMode() !void {
     try ensureHandles();
 
@@ -80,7 +70,6 @@ pub fn enableRawMode() !void {
     }
     original_out_mode = out_mode;
 
-    const ENABLE_VIRTUAL_TERMINAL_PROCESSING: u32 = 0x0004;
     const new_out_mode = out_mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
     if (win.kernel32.SetConsoleMode(out_handle.?, new_out_mode) == 0) {
         return WinError.SetConsoleModeFailed;
@@ -126,23 +115,32 @@ pub fn enableRawMode() !void {
     return;
 }
 
-pub fn disableRawMode() !void {
+pub fn restoreOriginalState() !void {
     try ensureHandles();
 
-    std.debug.print("Disabling raw mode...\n", .{});
+    std.debug.print("Restoring original backend state...\n", .{});
 
+    _ = win.kernel32.SetConsoleCtrlHandler(win_ctrl_handler, 0);
+
+    // Then restore console modes (inverse of enableRawMode)
     _ = win.kernel32.SetConsoleOutputCP(original_out_cp);
 
-    if (out_handle) |h| {
-        // restore original output mode
-        _ = win.kernel32.SetConsoleMode(h, original_out_mode);
-    }
+    // Exit alternate screen first before restoring console modes
+    // const seq = AnsiCodes.Cursor.show ++ AnsiCodes.Text.Style.reset ++ AnsiCodes.Screen.exitAlt;
+    // try flush(seq);
+
     if (in_handle) |h| {
         _ = win.kernel32.SetConsoleMode(h, original_in_mode);
     }
 
-    // remove ctrl handler
-    _ = win.kernel32.SetConsoleCtrlHandler(win_ctrl_handler, 0);
+    if (out_handle) |h| {
+        _ = win.kernel32.SetConsoleMode(h, original_out_mode);
+    }
+
+    // Exit alternate screen first before restoring console modes
+    const seq = AnsiCodes.Screen.exitAlt ++ AnsiCodes.Cursor.show ++ AnsiCodes.Text.Style.reset;
+    try flush(seq);
+
     return;
 }
 

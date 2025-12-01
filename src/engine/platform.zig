@@ -19,8 +19,7 @@ pub fn setup() !void {
 pub fn revert() void {
     std.debug.print("Reverting platform setup...\n", .{});
 
-    backend.disableRawMode() catch {};
-    backend.exitAltScreen() catch {};
+    backend.restoreOriginalState() catch {};
 
     std.debug.print("Platform revert complete.\n", .{});
 }

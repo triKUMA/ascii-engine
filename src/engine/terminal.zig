@@ -4,12 +4,14 @@ const platform = @import("platform.zig");
 pub const Terminal = struct {
     width: u16,
     height: u16,
+    out: std.Io.Writer,
 
     pub fn init() !Terminal {
         const size = try platform.backend.getTerminalSize();
         return Terminal{
             .width = size.width,
             .height = size.height,
+            .out = std.fs.File.stdout().writer(&.{}).interface,
         };
     }
 
