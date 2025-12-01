@@ -2,19 +2,11 @@ const std = @import("std");
 const os = std.os;
 const win = std.os.windows;
 
-/// Windows console backend for ascii-engine
-/// - Uses Win32 console functions exposed by Zig's std.os
-/// - Enables VT processing so ANSI sequences work
-/// - Provides functions used by the engine:
-///     enterAltScreen, exitAltScreen,
-///     enableRawMode, disableRawMode,
-///     getTerminalSize, flush
 pub const WinError = error{
     GetStdHandleFailed,
     GetConsoleModeFailed,
     SetConsoleModeFailed,
     GetConsoleScreenBufferInfoFailed,
-    WriteStdOutFailed,
 };
 
 var out_handle: ?win.HANDLE = null;
